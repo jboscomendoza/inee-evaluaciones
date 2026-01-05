@@ -10,7 +10,7 @@ COLOR_BARRA = {
 }
 COLOR_LINEA = "#b8c0ff"
 COLOR_PUNTO = "#4D9DE0"
-COLS_SCORE = ["periodo", "grado_nombre", "campo", "tipo", "score", "ee"]
+COLS_SCORE = ["periodo", "grado_nombre", "campo", "tipo", "score", "ee", "escuelas", "estudiantes"]
 COLS_SCORE_NOMBRE = [
     "Aplicación",
     "Grado",
@@ -18,9 +18,11 @@ COLS_SCORE_NOMBRE = [
     "Tipo",
     "Puntaje",
     "Error estándar",
+    "Escuelas",
+    "Estudiantes"
 ]
-COLS_LOGRO = ["periodo", "grado_nombre", "campo", "tipo", "nivel", "porcentaje"]
-COLS_LOGRO_NOMBRE = ["Aplicación", "Grado", "Campo", "Tipo", "Nivel", "Porcentaje"]
+COLS_LOGRO = ["periodo", "grado_nombre", "campo", "tipo", "nivel", "porcentaje", "escuelas", "estudiantes"]
+COLS_LOGRO_NOMBRE = ["Aplicación", "Grado", "Campo", "Tipo", "Nivel", "Porcentaje", "Escuelas", "Estudiantes"]
 MARGENES = dict(t=30, b=40)
 
 ruta = "data/PLANEA_{m}_nacional.parquet"
@@ -56,8 +58,8 @@ with col_select_3:
     campos = score_grado.get_column("campo").unique()
     campo = st.selectbox("Campo:", options=campos, index=0)
 
-logro_campo = logro_grado.filter(pl.col("campo") == campo)
-score_campo = score_grado.filter(pl.col("campo") == campo)
+logro_campo = logro_grado.sort("tipo").filter(pl.col("campo") == campo)
+score_campo = score_grado.sort("tipo").filter(pl.col("campo") == campo)
 
 st.markdown(f"## {campo}")
 
@@ -76,7 +78,7 @@ with col_plot_1:
     )
     score_plot.add_trace(
         go.Scatter(
-            x=score_campo.get_column("tipo"),
+            x=score_campo.sort("tipo").get_column("tipo"),
             y=score_campo.get_column("score"),
             name="Puntaje",
             text=score_campo.get_column("score").round(2),
@@ -103,12 +105,12 @@ with col_plot_2:
     niveles = logro_campo.sort("nivel").get_column("nivel").unique(maintain_order=True)
     plot_logro = go.Figure()
     for nivel in niveles:
-        logro_nivel = logro_campo.filter(pl.col("nivel") == nivel)
+        logro_nivel = logro_campo.sort("tipo", descending=True).filter(pl.col("nivel") == nivel)
         plot_logro.add_trace(
             go.Bar(
                 name=nivel,
-                y=logro_nivel["tipo"],
-                x=logro_nivel["porcentaje"],
+                x=logro_nivel.get_column("porcentaje"),
+                y=logro_nivel.get_column("tipo"),
                 text=logro_nivel["porcentaje"],
                 marker=dict(color=COLOR_BARRA[nivel]),
                 orientation="h",
@@ -118,9 +120,8 @@ with col_plot_2:
 
     logro_df = logro_campo.select(COLS_LOGRO)
     logro_df.columns = COLS_LOGRO_NOMBRE
-    logro_df = logro_df.pivot(
+    logro_pivot = logro_df.pivot(
         on="Nivel", values="Porcentaje", index=["Aplicación", "Grado", "Campo", "Tipo"]
     )
-
     st.plotly_chart(plot_logro, key=f"{periodo}{grado}{campo}_logro")
-    st.dataframe(logro_df.to_pandas().set_index("Aplicación"))
+    st.dataframe(logro_pivot.to_pandas().set_index("Aplicación"))
