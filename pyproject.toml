@@ -1,7 +1,7 @@
 [project]
 name = "inee-evaluaciones"
 version = "0.1.0"
-description = "Add your description here"
+description = "Resultados de las evaluaciones del aprendizaje realizadas por el INEE del 2015 al 2018."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
