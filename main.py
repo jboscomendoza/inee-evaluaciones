@@ -39,9 +39,33 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("Resultados nacionales")
+st.title("INEE - Resultados de evaluaciones del aprendizaje")
+st.markdown("## PLANEA 2015-2018")
+st.image("img/planea.png", width=500)
 
-col_select_1, col_select_2, col_select_3 = st.columns(3)
+col_texto_1, col_texto_2 = st.columns(2)
+
+with col_texto_1:
+    """
+    A continuación, se presentan los principales resultados de las aplicaciones del Plan nacional de evaluación de los aprendizajes (PLANEA) del 2015 al 2018 realizadas por el Instituto Nacional para la Evaluación de la Educación (INEE) de México.
+    
+    Estas evaluaciones fueron diseñadas para devolver resultados sobre el estado del aprendizaje de las y los estudiantes de obligatoria a nivel de sistema educativo. Siguieron un esquema de aplicación escalonado, en el que diferentes grados escolares y campos de conocimiento o asignaturas fueron evaluados en distintos años, por ello no todos están representados en cada una de las aplicaciones.
+    
+    Las bases de datos de estas evaluaciones pueden ser encontradas [en este enlace](https://drive.google.com/drive/u/0/folders/1BfdafxB3ehjZRRf80c90Y-XQusN9N85K).
+    
+    """
+with col_texto_2:
+    """
+    Los resultados de las y los estudiantes fueron expresados como un puntaje estandarizado con una media igual a 500 y una desviación estándar igual a 100, así como en cuatro niveles de logro:
+
+    * **Nivel I.** Los estudiantes que se ubican en este nivel obtienen puntuaciones que representan un logro insuficiente de los aprendizajes clave del currículum, lo que
+    refleja carencias fundamentales que dificultarán el aprendizaje futuro.
+    * **Nivel II.** Los estudiantes que se ubican en este nivel tienen un logro apenas indispensable de los aprendizajes clave del currículum.
+    * **Nivel III.** Los estudiantes que se ubican en este nivel tienen un logro satisfactorio de los aprendizajes clave del currículum.
+    * **Nivel IV.** Los estudiantes que se ubican en este nivel tienen un logro sobresaliente de los aprendizajes clave del currículum.
+    """
+
+col_select_1, col_select_2 = st.columns(2)
 with col_select_1:
     periodos = nacional_score.get_column("periodo").unique()
     periodo = st.selectbox("Año", options=periodos, index=0)
@@ -52,76 +76,74 @@ with col_select_2:
     grados = score_periodo.get_column("grado_nombre").unique()
     grado = st.selectbox("Grado", options=grados, index=0)
     score_grado = score_periodo.filter(pl.col("grado_nombre") == grado)
-    logro_grado = logro_periodo.filter(pl.col("grado_nombre") == grado)
+    logro_grado = logro_periodo.sort(["campo", "tipo"]).filter(pl.col("grado_nombre") == grado)
 
-with col_select_3:
-    campos = score_grado.get_column("campo").unique()
-    campo = st.selectbox("Campo:", options=campos, index=0)
+campos = score_grado.sort("campo").get_column("campo").unique(maintain_order=True)
 
-logro_campo = logro_grado.sort("tipo").filter(pl.col("campo") == campo)
-score_campo = score_grado.sort("tipo").filter(pl.col("campo") == campo)
+for campo in campos:
+    st.markdown(f"## {campo}")
+    score_campo = score_grado.filter(pl.col("campo") == campo)
+    logro_campo = logro_grado.filter(pl.col("campo") == campo)
 
-st.markdown(f"## {campo}")
+    col_plot_1, col_plot_2 = st.columns(2, gap="large")
+    with col_plot_1:
+        score_nacional = score_campo.filter(pl.col("tipo") == "Nacional")["score"][0]
 
-col_plot_1, col_plot_2 = st.columns(2, gap="large")
-with col_plot_1:
-    score_nacional = score_campo.filter(pl.col("tipo") == "Nacional")["score"][0]
+        st.markdown("### Puntaje")
 
-    st.markdown("### Puntaje")
-
-    score_plot = go.Figure()
-    score_plot.add_hline(
-        y=score_nacional,
-        name="Media nacional",
-        line_color=COLOR_LINEA,
-        showlegend=True,
-    )
-    score_plot.add_trace(
-        go.Scatter(
-            x=score_campo.sort("tipo").get_column("tipo"),
-            y=score_campo.get_column("score"),
-            name="Puntaje",
-            text=score_campo.get_column("score").round(2),
-            textposition="middle right",
-            marker_color=COLOR_PUNTO,
-            mode="markers+text",
-            error_y=dict(
-                type="data",
-                array=score_campo["ee"],
-                visible=True,
-            ),
+        score_plot = go.Figure()
+        score_plot.add_hline(
+            y=score_nacional,
+            name="Media nacional",
+            line_color=COLOR_LINEA,
+            showlegend=True,
         )
-    )
-    score_plot.update_layout(margin=MARGENES)
-
-    score_df = score_campo.select(COLS_SCORE)
-    score_df.columns = COLS_SCORE_NOMBRE
-    st.plotly_chart(score_plot, key=f"{periodo}{grado}{campo}_score")
-    st.dataframe(score_df.to_pandas().set_index("Aplicación"))
-
-with col_plot_2:
-    st.markdown("### Niveles de logro")
-
-    niveles = logro_campo.sort("nivel").get_column("nivel").unique(maintain_order=True)
-    plot_logro = go.Figure()
-    for nivel in niveles:
-        logro_nivel = logro_campo.sort("tipo", descending=True).filter(pl.col("nivel") == nivel)
-        plot_logro.add_trace(
-            go.Bar(
-                name=nivel,
-                x=logro_nivel.get_column("porcentaje"),
-                y=logro_nivel.get_column("tipo"),
-                text=logro_nivel["porcentaje"],
-                marker=dict(color=COLOR_BARRA[nivel]),
-                orientation="h",
+        score_plot.add_trace(
+            go.Scatter(
+                x=score_campo.sort("tipo").get_column("tipo"),
+                y=score_campo.get_column("score"),
+                name="Puntaje",
+                text=score_campo.get_column("score").round(2),
+                textposition="middle right",
+                marker_color=COLOR_PUNTO,
+                mode="markers+text",
+                error_y=dict(
+                    type="data",
+                    array=score_campo["ee"],
+                    visible=True,
+                ),
             )
         )
-    plot_logro.update_layout(barmode="stack", margin=MARGENES)
+        score_plot.update_layout(margin=MARGENES, xaxis_title="Nacional y tipos de escuela", yaxis_title="Puntaje")
 
-    logro_df = logro_campo.select(COLS_LOGRO)
-    logro_df.columns = COLS_LOGRO_NOMBRE
-    logro_pivot = logro_df.pivot(
-        on="Nivel", values="Porcentaje", index=["Aplicación", "Grado", "Campo", "Tipo"]
-    )
-    st.plotly_chart(plot_logro, key=f"{periodo}{grado}{campo}_logro")
-    st.dataframe(logro_pivot.to_pandas().set_index("Aplicación"))
+        score_df = score_campo.select(COLS_SCORE)
+        score_df.columns = COLS_SCORE_NOMBRE
+        st.plotly_chart(score_plot, key=f"{periodo}{grado}{campo}_score")
+        st.dataframe(score_df.to_pandas().set_index("Aplicación"))
+
+    with col_plot_2:
+        st.markdown("### Niveles de logro")
+
+        niveles = logro_campo.sort("nivel").get_column("nivel").unique(maintain_order=True)
+        plot_logro = go.Figure()
+        for nivel in niveles:
+            logro_nivel = logro_campo.sort("tipo", descending=True).filter(pl.col("nivel") == nivel)
+            plot_logro.add_trace(
+                go.Bar(
+                    name=nivel,
+                    x=logro_nivel.get_column("porcentaje"),
+                    y=logro_nivel.get_column("tipo"),
+                    text=logro_nivel["porcentaje"],
+                    marker=dict(color=COLOR_BARRA[nivel]),
+                    orientation="h",
+                )
+            )
+        plot_logro.update_layout(barmode="stack", margin=MARGENES, xaxis_title="Porcentaje", yaxis_title="Nacional y tipos de escuela")
+
+        logro_df = logro_campo.select(COLS_LOGRO)
+        logro_df.columns = COLS_LOGRO_NOMBRE
+        logro_pivot = logro_df.pivot(
+            on="Nivel", values="Porcentaje", index=["Aplicación", "Grado", "Campo", "Tipo"]
+        )
+        st.plotly_chart(plot_logro, key=f"{periodo}{grado}{campo}_logro")
+        st.dataframe(logro_pivot.to_pandas().set_index("Aplicación"))

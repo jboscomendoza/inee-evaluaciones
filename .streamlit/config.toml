@@ -1,0 +1,10 @@
+[theme]
+base = "light"
+font = "'Montserrat':https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,500;1,500&display=swap"
+primaryColor = "#815ac0"
+secondaryBackgroundColor = "#f2eaf6"
+textColor = "#333333"
+linkColor = "#815ac0"
+dataframeBorderColor = "#815ac0"
+dataframeHeaderBackgroundColor = "#f2eaf6"
+showWidgetBorder = true
