@@ -70,12 +70,33 @@ COLS_LOGRO_NOMBRE = [
     "Escuelas",
     "Estudiantes",
 ]
+COLS_LOGRO_ENT = [
+    "periodo",
+    "grado_nombre",
+    "campo",
+    "entidad",
+    "nivel",
+    "porcentaje",
+    "escuelas",
+    "estudiantes",
+]
+COLS_LOGRO_NOMBRE_ENT = [
+    "Aplicación",
+    "Grado",
+    "Campo",
+    "Entidad",
+    "Nivel",
+    "Porcentaje",
+    "Escuelas",
+    "Estudiantes",
+]
 MARGENES = dict(t=30, b=40)
 
 ruta = "data/PLANEA_{m}.parquet"
 planea_score = pl.read_parquet(ruta.format(m="score_nacional"))
 planea_score_ent = pl.read_parquet(ruta.format(m="score_entidad"))
 planea_logro = pl.read_parquet(ruta.format(m="logro_nacional"))
+planea_logro_ent = pl.read_parquet(ruta.format(m="logro_entidad"))
 
 nacional_score = planea_score.filter(pl.col("subpoblacion") == "Nacional")
 nacional_logro = planea_logro.filter(pl.col("subpoblacion") == "Nacional")
@@ -233,6 +254,7 @@ with tab_entidad:
             "Año", options=periodos_ent, index=0, key="periodo_ent"
         )
         score_periodo_ent = planea_score_ent.filter(pl.col("periodo") == periodo_ent)
+        logro_periodo_ent = planea_logro_ent.filter(pl.col("periodo") == periodo_ent)
 
     with col_sel_ent_2:
         grados_ent = (
@@ -242,12 +264,14 @@ with tab_entidad:
         )
         grado_ent = st.selectbox("Grado", options=grados_ent, index=0, key="grado_ent")
         score_grado_ent = score_periodo_ent.filter(pl.col("grado_nombre") == grado_ent)
+        logro_grado_ent = logro_periodo_ent.filter(pl.col("grado_nombre") == grado_ent)
         
     campos_ent = score_grado_ent.sort("campo").get_column("campo").unique(maintain_order=True)
     
     for campo_ent in campos_ent:
         st.markdown(f"## {campo_ent}")
         score_campo_ent = score_grado_ent.filter(pl.col("campo") == campo_ent)
+        logro_campo_ent = logro_grado_ent.filter(pl.col("campo") == campo_ent)
         
         col_plot_ent_1, col_plot_ent_2 = st.columns(2, gap="large")
         
@@ -285,3 +309,39 @@ with tab_entidad:
             st.plotly_chart(score_plot_ent, key=f"{periodo_ent}{grado_ent}{campo_ent}_score_ent")
             st.dataframe(score_ent.to_pandas().set_index("Aplicación"))
         
+        with col_plot_ent_2:
+            st.markdown("### Niveles de logro")
+            #logro_sorted = logro_campo_ent.sort(["entidad", "nivel"])
+            
+            niveles_ent = logro_campo_ent.sort("nivel").get_column("nivel").unique(maintain_order=True)
+            plot_logro_ent = go.Figure()
+            for nivel in niveles_ent:
+                logro_nivel_ent = logro_campo_ent.sort("entidad", descending=True).filter(pl.col("nivel") == nivel)
+                plot_logro_ent.add_trace(
+                    go.Bar(
+                        name=nivel,
+                        x=logro_nivel_ent.get_column("porcentaje"),
+                        y=logro_nivel_ent.get_column("entidad"),
+                        text=logro_nivel_ent["porcentaje"],
+                        marker=dict(color=COLOR_BARRA[nivel]), orientation="h",
+                        
+                    )
+                )
+            plot_logro_ent.update_layout(
+                barmode="stack",
+                margin=MARGENES,
+                xaxis_title="Porcentaje",
+                yaxis_title="Entidades",
+                height=650,
+            )
+            
+            logro_df_ent = logro_campo_ent.select(COLS_LOGRO_ENT)
+            logro_df_ent.columns = COLS_LOGRO_NOMBRE_ENT
+            logro_pivot_ent = logro_df_ent.pivot(
+                on="Nivel",
+                values="Porcentaje",
+                index=["Aplicación", "Grado", "Campo", "Entidad"]
+            )
+            st.plotly_chart(plot_logro_ent, key=f"{periodo_ent}{grado_ent}{campo_ent}_logro_ent")
+            st.dataframe(logro_pivot_ent.to_pandas().set_index("Aplicación"))
+
