@@ -9,34 +9,64 @@ COLOR_LINEA = "#815ac0"
 
 COLOR_PUNTO = "#4D9DE0"
 
-def get_cols(metrica: str, grupo: str) -> list:
+MARGENES = dict(t=30, b=40)
+
+def get_cols(metrica: str, grupo: str, titulo: bool = False) -> list:
     """
-    Devuelve una lista con nombres de columnas
+    Devuelve una lista con nombres de columnas.
 
     :param metrica: Uno de "score" o "logro".
     :type metrica: str
-    :param grupo: Description
-    :type grupo: Uno de "nacional" o "entidades".
-    :return: Lista con nombres de columnas.
+    :param grupo: Uno de "nacional" o "entidad".
+    :type grupo: str
+    :param titulo: Si debe devolver los nombres con formato de título.
+    :type titulo: bool
+    :return: Una lista con nombres de columnas.
     :rtype: list
     """
-    if metrica == "score":
+    if grupo == "nacional":
+        col_grupo = "tipo"
+    elif grupo == "entidad":
+        col_grupo = "entidad"
+    if metrica == "score" and titulo:
+        cols = [
+            "Aplicación",
+            "Grado",
+            "Campo",
+            col_grupo.title(),
+            "Puntaje",
+            "Error estándar",
+            "Escuelas",
+            "Estudiantes",
+        ]
+    elif metrica == "score":
         cols = [
             "periodo",
             "grado_nombre",
             "campo",
-            "tipo",
+            col_grupo,
             "score",
             "ee",
             "escuelas",
             "estudiantes",
+        ]
+    elif metrica == "logro" and titulo:
+        cols = [
+            "Aplicación",
+            "Grado",
+            "Campo",
+            col_grupo.title(),
+            "Nivel",
+            "Porcentaje",
+            "Escuelas",
+            "Estudiantes",
         ]
     elif metrica == "logro":
         cols = [
             "periodo",
             "grado_nombre",
             "campo",
-            "tipo",
+            col_grupo,
             "nivel",
             "porcentaje",
             "escuelas",

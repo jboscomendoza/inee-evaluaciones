@@ -3,89 +3,6 @@ import polars as pl
 import helper as hl
 import plotly.graph_objects as go
 
-
-COLS_SCORE = [
-    "periodo",
-    "grado_nombre",
-    "campo",
-    "tipo",
-    "score",
-    "ee",
-    "escuelas",
-    "estudiantes",
-]
-COLS_SCORE_NOMBRE = [
-    "Aplicación",
-    "Grado",
-    "Campo",
-    "Tipo",
-    "Puntaje",
-    "Error estándar",
-    "Escuelas",
-    "Estudiantes",
-]
-COLS_SCORE_ENT = [
-    "periodo",
-    "grado_nombre",
-    "campo",
-    "entidad",
-    "puntaje",
-    "ee",
-    "escuelas",
-    "estudiantes",
-]
-COLS_SCORE_NOMBRE_ENT= [
-    "Aplicación",
-    "Grado",
-    "Campo",
-    "Entidad",
-    "Puntaje",
-    "Error estándar",
-    "Escuelas",
-    "Estudiantes",
-]
-COLS_LOGRO = [
-    "periodo",
-    "grado_nombre",
-    "campo",
-    "tipo",
-    "nivel",
-    "porcentaje",
-    "escuelas",
-    "estudiantes",
-]
-COLS_LOGRO_NOMBRE = [
-    "Aplicación",
-    "Grado",
-    "Campo",
-    "Tipo",
-    "Nivel",
-    "Porcentaje",
-    "Escuelas",
-    "Estudiantes",
-]
-COLS_LOGRO_ENT = [
-    "periodo",
-    "grado_nombre",
-    "campo",
-    "entidad",
-    "nivel",
-    "porcentaje",
-    "escuelas",
-    "estudiantes",
-]
-COLS_LOGRO_NOMBRE_ENT = [
-    "Aplicación",
-    "Grado",
-    "Campo",
-    "Entidad",
-    "Nivel",
-    "Porcentaje",
-    "Escuelas",
-    "Estudiantes",
-]
-MARGENES = dict(t=30, b=40)
-
 ruta = "data/PLANEA_{m}.parquet"
 score = pl.read_parquet(ruta.format(m="score_nacional"))
 logro = pl.read_parquet(ruta.format(m="logro_nacional"))
@@ -156,13 +73,14 @@ for campo in campos:
             )
         )
         score_plot.update_layout(
-            margin=MARGENES,
+            margin=hl.MARGENES,
             xaxis_title="Nacional y tipos de escuela",
             yaxis_title="Puntaje",
         )
-
-        score_df = score_campo.select(COLS_SCORE)
-        score_df.columns = COLS_SCORE_NOMBRE
+        cols_score = hl.get_cols("score", "nacional")
+        cols_score_titulo = hl.get_cols("score", "nacional", True)
+        score_df = score_campo.select(cols_score)
+        score_df.columns = cols_score_titulo
         st.plotly_chart(score_plot, key=f"{periodo}{grado}{campo}_score")
         st.dataframe(score_df.to_pandas().set_index("Aplicación"))
 
@@ -191,13 +109,14 @@ for campo in campos:
             )
         plot_logro.update_layout(
             barmode="stack",
-            margin=MARGENES,
+            margin=hl.MARGENES,
             xaxis_title="Porcentaje",
             yaxis_title="Nacional y tipos de escuela",
         )
-
-        logro_df = logro_campo.select(COLS_LOGRO)
-        logro_df.columns = COLS_LOGRO_NOMBRE
+        cols_logro = hl.get_cols("logro", "nacional")
+        cols_logro_titulo = hl.get_cols("logro", "nacional", True)
+        logro_df = logro_campo.select(cols_logro)
+        logro_df.columns = cols_logro_titulo
         logro_pivot = logro_df.pivot(
             on="Nivel",
             values="Porcentaje",
