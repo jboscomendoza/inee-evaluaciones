@@ -18,7 +18,9 @@ with col_texto_1:
     
     Estas evaluaciones fueron diseñadas para devolver resultados sobre el estado del aprendizaje de las y los estudiantes de obligatoria a nivel de sistema educativo. Siguieron un esquema de aplicación escalonado, en el que diferentes grados escolares y campos de conocimiento o asignaturas fueron evaluados en distintos años, por ello no todos están representados en cada una de las aplicaciones.
     
-    Las bases de datos de estas evaluaciones pueden ser encontradas [en este enlace](https://drive.google.com/drive/u/0/folders/1BfdafxB3ehjZRRf80c90Y-XQusN9N85K).
+     * Las bases de datos de estas evaluaciones pueden ser encontradas [en este enlace](https://drive.google.com/drive/u/0/folders/1BfdafxB3ehjZRRf80c90Y-XQusN9N85K).
+     * El código de este reporte se encuentra [en este enlace](https://github.com/jboscomendoza/inee-evaluaciones).
+
     
     """
 with col_texto_2:

@@ -15,6 +15,9 @@ ruta = "data/PLANEA_{m}.parquet"
 score_ent = pl.read_parquet(ruta.format(m="score_entidad"))
 logro_ent = pl.read_parquet(ruta.format(m="logro_entidad"))
 
+st.title("PLANEA 2015-2018 - Resultados por entidad")
+st.image("img/planea.png", width=500)
+
 col_sel_ent_1, col_sel_ent_2 = st.columns(2)
 with col_sel_ent_1:
     periodos_ent = (
