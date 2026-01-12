@@ -10,12 +10,8 @@ st.set_page_config(
 )
 
 ruta = "data/PLANEA_{m}.parquet"
-score = pl.read_parquet(ruta.format(m="score_nacional")).filter(
-    pl.col("subpoblacion") == "Nacional"
-)
-logro = pl.read_parquet(ruta.format(m="logro_nacional")).filter(
-    pl.col("subpoblacion") == "Nacional"
-)
+score = pl.read_parquet(ruta.format(m="score_nacional"))
+logro = pl.read_parquet(ruta.format(m="logro_nacional"))
 
 
 st.title("PLANEA 2015-2018 - Resultados nacionales")
@@ -47,47 +43,20 @@ for campo in campos:
 
     col_plot_1, col_plot_2 = st.columns(2, gap="large")
     with col_plot_1:
-        score_nacional = score_campo.filter(pl.col("tipo") == "Nacional")["score"][0]
-
         st.markdown("### Puntaje")
 
+        score_nacional = score_campo.filter(pl.col("tipo") == "Nacional")["score"][0]
         score = score_campo.get_column("score")
         tipo = score_campo.get_column("tipo")
         ee = score_campo.get_column("ee") * 1.96
-        
-        score_plot = go.Figure()
-        score_plot.add_vline(
-            x=score_nacional,
-            name="Media nacional",
-            line_color=hl.COLOR_LINEA,
-            showlegend=True,
-        )
-        score_plot.add_trace(
-            go.Scatter(
-                x=score,
-                y=tipo,
-                name="Puntaje",
-                text=score.round(2),
-                textposition="top center",
-                marker_color=hl.COLOR_PUNTO,
-                mode="markers+text",
-                orientation="h",
-                error_x=dict(
-                    type="data",
-                    array=ee,
-                    visible=True,
-                ),
-            )
-        )
-        score_plot.update_layout(
-            xaxis_title="Puntaje con intervalo de confianza al 95%",
-            yaxis_title="Nacional y tipos de escuela",
-            margin=hl.MARGENES,
-        )
+
+        score_plot = hl.get_score_plot(score, tipo, ee, score_nacional=score_nacional)
+
         cols_score = hl.get_cols("score", "nacional")
         cols_score_titulo = hl.get_cols("score", "nacional", True)
         score_df = score_campo.select(cols_score).sort("tipo")
         score_df.columns = cols_score_titulo
+
         st.plotly_chart(score_plot, key=f"{periodo}{grado}{campo}_score")
         st.dataframe(score_df.to_pandas().set_index("Aplicación"))
 

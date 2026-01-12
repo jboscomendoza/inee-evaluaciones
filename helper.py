@@ -1,3 +1,5 @@
+import plotly.graph_objects as go
+
 COLOR_BARRA = {
     "Nivel 1": "#f3722c",
     "Nivel 2": "#f9c74f",
@@ -73,3 +75,44 @@ def get_cols(metrica: str, grupo: str, titulo: bool = False) -> list:
             "estudiantes",
         ]
     return cols
+
+def get_score_plot(score, grupo, ee, score_nacional=None) -> go.Figure:
+    if len(grupo) > 16:
+        alto = len(grupo) * 30
+        titulo_yaxis = "Entidades"
+    else:
+        alto = len(grupo) * 65
+        titulo_yaxis = "Nacional y tipos de escuela"
+    score_plot = go.Figure()
+    if score_nacional:
+        score_plot.add_vline(
+            x=score_nacional,
+            name="Media nacional",
+            line_color=COLOR_LINEA,
+            showlegend=True,
+        )
+    score_plot.add_trace(
+        go.Scatter(
+            x=score,
+            y=grupo,
+            name="Puntaje",
+            text=score.round(2),
+            textposition="top center",
+            marker_color=COLOR_PUNTO,
+            mode="markers+text",
+            orientation="h",
+            error_x=dict(
+                type="data",
+                array=ee,
+                visible=True,
+            ),
+        )
+    )
+    score_plot.update_layout(
+        xaxis_title="Puntaje con intervalo de confianza al 95%",
+        yaxis_title=titulo_yaxis,
+        margin=MARGENES,
+        height=alto,
+    )
+    return score_plot
+    
