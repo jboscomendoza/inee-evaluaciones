@@ -1,3 +1,4 @@
+import polars as pl
 import plotly.graph_objects as go
 
 COLOR_BARRA = {
@@ -115,4 +116,43 @@ def get_score_plot(score, grupo, ee, score_nacional=None) -> go.Figure:
         height=alto,
     )
     return score_plot
+
+def get_logro_plot(df, grupo) -> go.Figure:
+    num_elementos = len(df.get_column(grupo).unique()) 
+    if num_elementos > 9:
+        alto = num_elementos * 40
+    else:
+        alto = num_elementos * 65
+    if grupo == "tipo":
+        titulo_yaxis = "Nacional y tipos de escuela"
+    elif grupo == "entidad":
+        titulo_yaxis = "Entidades"
     
+    niveles = (
+        df.sort("nivel").get_column("nivel").unique(maintain_order=True)
+        )
+    
+    plot_logro = go.Figure()
+    for nivel in niveles:
+            logro_nivel = df.filter(pl.col("nivel") == nivel)
+            porcentaje = logro_nivel.get_column("porcentaje")
+            tipo = logro_nivel.get_column(grupo)
+
+            plot_logro.add_trace(
+                go.Bar(
+                    name=nivel,
+                    x=porcentaje,
+                    y=tipo,
+                    text=porcentaje,
+                    marker=dict(color=COLOR_BARRA[nivel]),
+                    orientation="h",
+                )
+            )
+    plot_logro.update_layout(
+        barmode="stack",
+        xaxis_title="Porcentaje por nivel de logro",
+        yaxis_title=titulo_yaxis,
+        margin=MARGENES,
+        height=alto,
+    )
+    return plot_logro

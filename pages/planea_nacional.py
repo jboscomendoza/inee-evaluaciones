@@ -62,34 +62,9 @@ for campo in campos:
 
     with col_plot_2:
         st.markdown("### Niveles de logro")
-
-        niveles = (
-            logro_campo.sort("nivel").get_column("nivel").unique(maintain_order=True)
-        )
-
-        plot_logro = go.Figure()
-        for nivel in niveles:
-            logro_nivel = logro_campo.filter(pl.col("nivel") == nivel)
-            porcentaje = logro_nivel.get_column("porcentaje")
-            tipo = logro_nivel.get_column("tipo")
-
-            plot_logro.add_trace(
-                go.Bar(
-                    name=nivel,
-                    x=porcentaje,
-                    y=tipo,
-                    text=porcentaje,
-                    marker=dict(color=hl.COLOR_BARRA[nivel]),
-                    orientation="h",
-                )
-            )
-        plot_logro.update_layout(
-            barmode="stack",
-            margin=hl.MARGENES,
-            xaxis_title="Porcentaje por nivel de logro",
-            yaxis_title="Nacional y tipos de escuela",
-        )
-
+        
+        plot_logro = hl.get_logro_plot(logro_campo, "tipo")
+        
         cols_logro = hl.get_cols("logro", "nacional")
         cols_logro_titulo = hl.get_cols("logro", "nacional", True)
         logro_df = logro_campo.select(cols_logro).sort("tipo")
