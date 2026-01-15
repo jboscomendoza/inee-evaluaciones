@@ -9,8 +9,6 @@ st.set_page_config(
     layout="wide",
 )
 
-ALTURA = 730
-
 ruta = "data/PLANEA_{m}.parquet"
 score = pl.read_parquet(ruta.format(m="score_entidad"))
 logro = pl.read_parquet(ruta.format(m="logro_entidad"))
@@ -21,25 +19,26 @@ st.image("img/planea.png", width=500)
 col_sel_1, col_sel_2 = st.columns(2)
 with col_sel_1:
     periodos = score.sort("periodo").get_column("periodo").unique(maintain_order=True)
-    periodo = st.selectbox("Año", options=periodos, index=0, key="periodo")
-    score_periodo = score.filter(pl.col("periodo") == periodo)
-    logro_periodo = logro.filter(pl.col("periodo") == periodo)
+    periodo = st.selectbox("Año", options=periodos, index=0)
+    grados = score.filter(pl.col("periodo") == periodo).get_column("grado_nombre").unique(maintain_order=True)
+    
+    orden = st.selectbox("Ordenar gráfico de puntaje por:", options=["Entidad", "Puntaje"], index=0)
 
 with col_sel_2:
-    grados = (
-        score_periodo.sort("grado")
-        .get_column("grado_nombre")
-        .unique(maintain_order=True)
-    )
     grado = st.selectbox("Grado", options=grados, index=0)
-    score_grado = score_periodo.filter(pl.col("grado_nombre") == grado)
-    logro_grado = logro_periodo.filter(pl.col("grado_nombre") == grado)
+    score_grado = score.filter(pl.col("periodo") == periodo, pl.col("grado_nombre") == grado)
+    logro_grado = logro.filter(pl.col("periodo") == periodo, pl.col("grado_nombre") == grado)
 
 campos = score_grado.sort("campo").get_column("campo").unique(maintain_order=True)
 
+if orden == "Entidad":
+    col_orden = "entidad"
+else:
+    col_orden = "score"
+
 for campo in campos:
     st.markdown(f"## {campo}")
-    score_campo = score_grado.sort("entidad", descending=True).filter(
+    score_campo = score_grado.sort(col_orden, descending=True).filter(
         pl.col("campo") == campo
     )
     logro_campo = logro_grado.sort("entidad", descending=True).filter(
@@ -66,32 +65,8 @@ for campo in campos:
 
     with col_plot_ent_2:
         st.markdown("### Niveles de logro")
-        niveles = (
-            logro_campo.sort("nivel").get_column("nivel").unique(maintain_order=True)
-        )
-        plot_logro = go.Figure()
-        for nivel in niveles:
-            logro_nivel = logro_campo.filter(pl.col("nivel") == nivel)
-            porcentaje = logro_nivel.get_column("porcentaje")
-            entidad = logro_nivel.get_column("entidad")
 
-            plot_logro.add_trace(
-                go.Bar(
-                    name=nivel,
-                    x=porcentaje,
-                    y=entidad,
-                    text=porcentaje,
-                    marker=dict(color=hl.COLOR_BARRA[nivel]),
-                    orientation="h",
-                )
-            )
-        plot_logro.update_layout(
-            barmode="stack",
-            margin=hl.MARGENES,
-            xaxis_title="Porcentaje por nivel logro",
-            yaxis_title="Entidades",
-            height=ALTURA,
-        )
+        plot_logro = hl.get_logro_plot(logro_campo, "entidad")
 
         cols_logro = hl.get_cols("logro", "entidad")
         cols_logro_titulo = hl.get_cols("logro", "entidad", True)

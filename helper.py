@@ -120,7 +120,7 @@ def get_score_plot(score, grupo, ee, score_nacional=None) -> go.Figure:
 def get_logro_plot(df, grupo) -> go.Figure:
     num_elementos = len(df.get_column(grupo).unique()) 
     if num_elementos > 9:
-        alto = num_elementos * 40
+        alto = num_elementos * 30
     else:
         alto = num_elementos * 65
     if grupo == "tipo":

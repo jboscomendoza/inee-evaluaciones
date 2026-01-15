@@ -21,20 +21,25 @@ col_select_1, col_select_2 = st.columns(2)
 with col_select_1:
     periodos = score.get_column("periodo").unique()
     periodo = st.selectbox("Año", options=periodos, index=0)
-    score_periodo = score.filter(pl.col("periodo") == periodo)
-    logro_periodo = logro.filter(pl.col("periodo") == periodo)
+    grados = score.filter(pl.col("periodo") == periodo).get_column("grado_nombre").unique(maintain_order=True)
+    orden = st.selectbox("Ordenar gráfico de puntaje por:", options=["Tipo de escuela", "Puntaje"], index=0)
 
 with col_select_2:
-    grados = score_periodo.get_column("grado_nombre").unique()
     grado = st.selectbox("Grado", options=grados, index=0)
-    score_grado = score_periodo.filter(pl.col("grado_nombre") == grado)
-    logro_grado = logro_periodo.filter(pl.col("grado_nombre") == grado)
+    score_grado = score.filter(pl.col("periodo") == periodo, pl.col("grado_nombre") == grado)
+    logro_grado = logro.filter(pl.col("periodo") == periodo, pl.col("grado_nombre") == grado)
 
 campos = score_grado.sort("campo").get_column("campo").unique(maintain_order=True)
 
+if orden == "Tipo de escuela":
+    col_orden = "tipo"
+else:
+    col_orden = "score"
+
+
 for campo in campos:
     st.markdown(f"## {campo}")
-    score_campo = score_grado.sort("tipo", descending=True).filter(
+    score_campo = score_grado.sort(col_orden, descending=True).filter(
         pl.col("campo") == campo
     )
     logro_campo = logro_grado.sort("tipo", descending=True).filter(
