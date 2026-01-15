@@ -21,25 +21,43 @@ col_select_1, col_select_2 = st.columns(2)
 with col_select_1:
     periodos = score.get_column("periodo").unique()
     periodo = st.selectbox("Año", options=periodos, index=0)
-    grados = score.filter(pl.col("periodo") == periodo).get_column("grado_nombre").unique(maintain_order=True)
-    orden = st.selectbox("Ordenar gráfico de puntaje por:", options=["Tipo de escuela", "Puntaje"], index=0)
+    grados = (
+        score.filter(pl.col("periodo") == periodo)
+        .get_column("grado_nombre")
+        .unique(maintain_order=True)
+    )
+
+    orden_score = st.selectbox(
+        "Ordenar gráfico de puntaje por:",
+        options=["Tipo de escuela", "Puntaje"],
+        index=0,
+    )
 
 with col_select_2:
     grado = st.selectbox("Grado", options=grados, index=0)
-    score_grado = score.filter(pl.col("periodo") == periodo, pl.col("grado_nombre") == grado)
-    logro_grado = logro.filter(pl.col("periodo") == periodo, pl.col("grado_nombre") == grado)
+    score_grado = score.filter(
+        pl.col("periodo") == periodo, pl.col("grado_nombre") == grado
+    )
+    logro_grado = logro.filter(
+        pl.col("periodo") == periodo, pl.col("grado_nombre") == grado
+    )
+
+    orden_logro = st.selectbox(
+        "Ordenar gráfico de niveles de logro por:",
+        options=["Tipo de escuela", "Nivel 1", "Nivel 2", "Nivel 3", "Nivel 4"],
+        index=0,
+    )
 
 campos = score_grado.sort("campo").get_column("campo").unique(maintain_order=True)
 
-if orden == "Tipo de escuela":
-    col_orden = "tipo"
+if orden_score == "Tipo de escuela":
+    col_orden_score = "tipo"
 else:
-    col_orden = "score"
-
+    col_orden_score = "score"
 
 for campo in campos:
     st.markdown(f"## {campo}")
-    score_campo = score_grado.sort(col_orden, descending=True).filter(
+    score_campo = score_grado.sort(col_orden_score, descending=True).filter(
         pl.col("campo") == campo
     )
     logro_campo = logro_grado.sort("tipo", descending=True).filter(
@@ -67,9 +85,21 @@ for campo in campos:
 
     with col_plot_2:
         st.markdown("### Niveles de logro")
-        
+
+        if orden_logro != "Tipo de escuela":
+            orden_enum = (
+                logro_campo.with_columns(pl.col("tipo").cast(pl.String()))
+                .filter(pl.col("nivel") == orden_logro)
+                .sort("porcentaje")
+                .get_column("tipo")
+                .unique(maintain_order=True)
+            )
+            logro_campo = logro_campo.with_columns(
+                pl.col("tipo").cast(pl.Enum(orden_enum))
+            ).sort("tipo")
+
         plot_logro = hl.get_logro_plot(logro_campo, "tipo")
-        
+
         cols_logro = hl.get_cols("logro", "nacional")
         cols_logro_titulo = hl.get_cols("logro", "nacional", True)
         logro_df = logro_campo.select(cols_logro).sort("tipo")

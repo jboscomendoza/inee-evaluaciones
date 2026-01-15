@@ -20,14 +20,30 @@ col_sel_1, col_sel_2 = st.columns(2)
 with col_sel_1:
     periodos = score.sort("periodo").get_column("periodo").unique(maintain_order=True)
     periodo = st.selectbox("Año", options=periodos, index=0)
-    grados = score.filter(pl.col("periodo") == periodo).get_column("grado_nombre").unique(maintain_order=True)
-    
-    orden = st.selectbox("Ordenar gráfico de puntaje por:", options=["Entidad", "Puntaje"], index=0)
+    grados = (
+        score.filter(pl.col("periodo") == periodo)
+        .get_column("grado_nombre")
+        .unique(maintain_order=True)
+    )
+
+    orden = st.selectbox(
+        "Ordenar gráfico de puntaje por:", options=["Entidad", "Puntaje"], index=0
+    )
 
 with col_sel_2:
     grado = st.selectbox("Grado", options=grados, index=0)
-    score_grado = score.filter(pl.col("periodo") == periodo, pl.col("grado_nombre") == grado)
-    logro_grado = logro.filter(pl.col("periodo") == periodo, pl.col("grado_nombre") == grado)
+    score_grado = score.filter(
+        pl.col("periodo") == periodo, pl.col("grado_nombre") == grado
+    )
+    logro_grado = logro.filter(
+        pl.col("periodo") == periodo, pl.col("grado_nombre") == grado
+    )
+    
+    orden_logro = st.selectbox(
+        "Ordenar gráfico de niveles de logro por:",
+        options=["Entidad", "Nivel 1", "Nivel 2", "Nivel 3", "Nivel 4"],
+        index=0,
+    )
 
 campos = score_grado.sort("campo").get_column("campo").unique(maintain_order=True)
 
@@ -65,6 +81,18 @@ for campo in campos:
 
     with col_plot_ent_2:
         st.markdown("### Niveles de logro")
+        
+        if orden_logro != "Entidad":
+            orden_enum = (
+                logro_campo.with_columns(pl.col("entidad").cast(pl.String()))
+                .filter(pl.col("nivel") == orden_logro)
+                .sort("porcentaje")
+                .get_column("entidad")
+                .unique(maintain_order=True)
+            )
+            logro_campo = logro_campo.with_columns(
+                pl.col("entidad").cast(pl.Enum(orden_enum))
+            ).sort("entidad")
 
         plot_logro = hl.get_logro_plot(logro_campo, "entidad")
 
